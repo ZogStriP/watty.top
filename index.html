@@ -2,10 +2,44 @@
 <html lang=fr>
 <meta charset=utf-8>
 <meta name=viewport content="width=device-width">
+<meta name=description content="Comparateur de prix des offres d'électricité en France">
 <link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <style>
 :root { color-scheme: dark; --accent: darkorange }
 a { color: var(--accent); text-decoration: none }
 a:hover, a:focus { text-shadow: 0 0 5px }
 </style>
-<title>watty.top - comparateur de prix des offres d'électricité en France</title>
+<title>watty.top</title>
+<input id=file type=file accept=".zip" onchange="handleFiles(this.files)">
+<script>
+parseEDF = (csv) => {
+  console.log(csv);
+};
+
+handleFiles = (files) => {
+  const reader = new FileReader();
+  reader.onload = ({ target }) => {
+    const { result } = target;
+    const td = new TextDecoder();
+    const view = new DataView(result);
+    let offset = 0;
+
+    while (offset < view.byteLength - 4) {
+      if (view.getUint32(offset, true) === 0x04034b50) {
+        const compressedSize = view.getUint32(offset + 18, true);
+        const nameLength = view.getUint16(offset + 26, true);
+        const extraLength = view.getUint16(offset + 28, true);
+        const name = td.decode(new Uint8Array(result, offset + 30, nameLength));
+        offset += 30 + nameLength + extraLength;
+        if (/^mes-puissances-atteintes-30min-\d+-\d+\.csv$/.test(name)) {
+          parseEDF(td.decode(new Uint8Array(result, offset, compressedSize)));
+          break;
+        }
+      } else {
+        offset++;
+      }
+    }
+  };
+  reader.readAsArrayBuffer(files[0]);
+}
+</script>
