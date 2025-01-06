@@ -12,8 +12,28 @@ a:hover, a:focus { text-shadow: 0 0 5px }
 <title>watty.top</title>
 <input id=file type=file accept=".zip" onchange="handleFiles(this.files)">
 <script>
-parseEDF = (csv) => {
-  console.log(csv);
+to48 = (t) => {
+  if (t === "00:00:00") return 47;
+  const [h, m] = t.split(":").map(Number);
+  return (h * 2 + m / 30) - 1 | 0;
+}
+
+parse = (csv) => {
+  let data = {};
+  let day;
+  
+  csv.split("\n").forEach((line) => {
+    const [a, b] = line.split(";");
+    if (a?.includes("/")) {
+      const [d, m, y] = a.split("/");
+      day = `${y}-${m}-${d}`;
+      data[day] = [];
+    } else if (a?.includes(":")) {
+      data[day][to48(a)] = b / 2;
+    }
+  });
+
+  console.log(data);
 };
 
 handleFiles = (files) => {
@@ -32,7 +52,7 @@ handleFiles = (files) => {
         const name = td.decode(new Uint8Array(result, offset + 30, nameLength));
         offset += 30 + nameLength + extraLength;
         if (/^mes-puissances-atteintes-30min-\d+-\d+\.csv$/.test(name)) {
-          parseEDF(td.decode(new Uint8Array(result, offset, compressedSize)));
+          parse(td.decode(new Uint8Array(result, offset, compressedSize)));
           break;
         }
       } else {
