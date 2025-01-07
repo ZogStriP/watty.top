@@ -12,16 +12,9 @@ a:hover, a:focus { text-shadow: 0 0 5px }
 <title>watty.top</title>
 <input id=file type=file accept=".zip" onchange="handleFiles(this.files)">
 <script>
-to48 = (t) => {
-  if (t === "00:00:00") return 47;
-  const [h, m] = t.split(":").map(Number);
-  return (h * 2 + m / 30) - 1 | 0;
-}
-
 parse = (csv) => {
-  let data = {};
-  let day;
-  
+  let day, data = {};
+
   csv.split("\n").forEach((line) => {
     const [a, b] = line.split(";");
     if (a?.includes("/")) {
@@ -29,12 +22,16 @@ parse = (csv) => {
       day = `${y}-${m}-${d}`;
       data[day] = [];
     } else if (a?.includes(":")) {
-      data[day][to48(a)] = b / 2;
+      let [h, m] = a.split(":").map(Number);
+      if (m === 0 || m === 30) {
+        const p = h === 0 && m === 0 ? 47 : h * 2 + m / 30 - 1;
+        data[day][p] = b / 2;
+      }
     }
   });
 
   console.log(data);
-};
+}
 
 handleFiles = (files) => {
   const reader = new FileReader();
