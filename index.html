@@ -20,17 +20,29 @@ parse = (csv) => {
     if (a?.includes("/")) {
       const [d, m, y] = a.split("/");
       day = `${y}-${m}-${d}`;
-      data[day] = [];
+      data[day] = Array(24).fill(0);
     } else if (a?.includes(":")) {
       let [h, m] = a.split(":").map(Number);
       if (m === 0 || m === 30) {
-        const p = h === 0 && m === 0 ? 47 : h * 2 + m / 30 - 1;
-        data[day][p] = b / 2;
+        data[day][h === 0 ? 23 : h - 1] += b / 2;
       }
     }
   });
 
-  console.log(data);
+  // TODO: usefull to keep data per hour or per halves?
+
+  const values = Object.values(data).flat().sort((a, b) => a - b);
+  const p5 = Math.floor(values.length * 0.05);
+  const base = values.slice(0, p5).reduce((a, b) => a + b, 0) / p5;
+  const max = Math.max(...values);
+  const kVA = max / 1000 / 0.93;
+
+  console.log({
+    data,
+    base: Math.ceil(base),
+    max: Math.ceil(max),
+    kVA: Math.ceil(kVA)
+  });
 }
 
 handleFiles = (files) => {
@@ -50,7 +62,7 @@ handleFiles = (files) => {
         offset += 30 + nameLength + extraLength;
         if (/^mes-puissances-atteintes-30min-\d+-\d+\.csv$/.test(name)) {
           parse(td.decode(new Uint8Array(result, offset, compressedSize)));
-          break;
+          return;
         }
       } else {
         offset++;
